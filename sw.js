@@ -1,6 +1,6 @@
 // Keeps the app usable offline: the page itself is fetched fresh when online,
 // everything else (icons, fonts, pdf.js) is served from the cache and refreshed behind the scenes.
-const VERSION = "mc-v10";
+const VERSION = "mc-v11";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-180.png", "./icons/icon-192.png", "./icons/icon-512.png"];
 
 self.addEventListener("install", (e) => {

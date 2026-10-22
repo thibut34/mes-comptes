@@ -791,35 +791,43 @@ function merchants(txs) {
   }
   return Object.values(m).map(x => ({ ...x, total:r2(x.total) }));
 }
-// Charges that come back regularly: direct debits, known subscriptions, or the same payee in several statements.
-// How often each one comes back is read from the months it was seen in, so nothing has to be set by hand:
-// a gap of 10 months or more means yearly, a monthly charge missing for 3 months has stopped.
+// Charges that come back regularly: direct debits and known subscriptions, or a transfer or debit seen in
+// several statements for about the same amount around the same day (a café or a friend paid once a month is not one).
+// How often each one comes back is read from the statements it was seen in, so nothing has to be set by hand:
+// a gap of 10 months or more means yearly, a monthly charge missing for 3 statements has stopped.
+const mi = (s) => +s.slice(0, 4) * 12 + +s.slice(5, 7);
+const stmtMonth = (sid) => { const s = S.statements.find(x => x.id === sid); return s ? mi(s.end) : 0; };
 function recurring() {
   if (memo.rec) return memo.rec;
   const seen = {}, L = sorted()[0];
-  const mi = (s) => +s.slice(0, 4) * 12 + +s.slice(5, 7);
   for (const t of allTx()) {
     if (t.amount >= 0 || !["out","save"].includes(kindOf(t)) || t.live) continue;
     const fixed = t.type === "prelevement" || ["abos","telecom","logement","credits"].includes(t.cat) || (t.cat === "placements" && /PERMANENT/i.test(t.title + " " + t.detail));
-    if (!seen[t.key]) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:-t.amount, date:t.date, sids:new Set(), months:new Set(), fixed:false, n:0 };
-    const r = seen[t.key]; r.sids.add(t.sid); r.months.add(mi(t.date)); r.n++; r.fixed = r.fixed || fixed;
+    if (!seen[t.key]) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:-t.amount, date:t.date, type:t.type, sids:new Set(), months:new Set(), amts:[], dom:[], fixed:false, n:0 };
+    const r = seen[t.key]; r.sids.add(t.sid); r.months.add(stmtMonth(t.sid)); r.amts.push(-t.amount); r.dom.push(+t.date.slice(8, 10)); r.n++; r.fixed = r.fixed || fixed;
   }
   const latest = L ? mi(L.end) : 0;
+  const steady = (r) => {
+    if (r.type !== "virement" || r.sids.size < 2 || r.n > r.sids.size || ["loisirs","resto","cafe","courses","shopping","transport","tabac","retraits"].includes(r.cat)) return false;
+    const lo = Math.min(...r.amts), hi = Math.max(...r.amts), dd = Math.max(...r.dom) - Math.min(...r.dom);
+    return hi - lo <= Math.max(2, hi * 0.05) && (dd <= 6 || dd >= 25);
+  };
   const autoFreq = (r) => {
     const ms = [...r.months].sort((a, b) => a - b), gaps = ms.slice(1).map((m, i) => m - ms[i]), ago = latest - ms[ms.length - 1];
     if (gaps.length && Math.min(...gaps) >= 10) return "y";
     if (ago >= 3) return gaps.length ? "off" : "y";
     return "m";
   };
-  const list = Object.values(seen).filter(r => r.fixed || (r.sids.size >= 2 && r.n <= r.sids.size * 1.5))
+  const list = Object.values(seen).filter(r => r.fixed || steady(r))
     .map(r => { const auto = autoFreq(r); return { ...r, auto, freq: S.settings.recur[r.key] || auto }; }).sort((a, b) => b.last - a.last);
   return (memo.rec = list);
 }
 const FREQ = { m:"Tous les mois", y:"Une fois par an", off:"Plus prévu" };
 const monthly = (r) => r.freq === "y" ? r.last / 12 : r.freq === "off" ? 0 : r.last;
+// Salary and benefits still being paid: seen on one of the last two statements.
 function regularIncome() {
-  const seen = {};
-  for (const t of allTx()) if (["salaire","aides"].includes(t.cat) && t.amount > 0 && !seen[t.key]) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:t.amount, date:t.date };
+  const seen = {}, L = sorted()[0], latest = L ? mi(L.end) : 0;
+  for (const t of allTx()) if (["salaire","aides"].includes(t.cat) && t.amount > 0 && !t.live && !seen[t.key] && latest - stmtMonth(t.sid) <= 1) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:t.amount, date:t.date };
   return Object.values(seen);
 }
 function dailyBalance(s) {

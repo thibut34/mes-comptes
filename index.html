@@ -317,6 +317,7 @@ input[type=range]{width:100%;accent-color:var(--accent);height:30px;margin:0}
 
 <input type="file" id="file-pdf" class="hidden-input" accept="application/pdf,.pdf" multiple>
 <input type="file" id="file-json" class="hidden-input" accept="application/json,.json">
+<input type="file" id="file-ap" class="hidden-input" accept="text/plain,text/csv,.txt,.csv">
 <div id="layer"></div>
 <div id="lock" hidden></div>
 
@@ -614,16 +615,74 @@ function catOf(t) {
 }
 let memo = {};
 function invalidate() { memo = {}; rebuildCats(); }
+/* Apple Pay payments noted by an iPhone Shortcut, shown until the monthly statement replaces them. */
+function liveTx() {
+  if (memo.live) return memo.live;
+  const L = [...S.statements].sort((a, b) => b.end.localeCompare(a.end))[0];
+  const main = L ? (mainAcc(L) || {}).name : "Compte Courant Postal";
+  return (memo.live = (S.live || []).map(x => ({ id:x.id, sid:"live", acct:main, date:x.date.slice(0, 10), time:x.date.slice(11, 16), amount:-x.amount, title:"APPLE PAY " + x.merchant.toUpperCase(), detail:"Apple Pay · provisoire", type:"cb", merchant:x.merchant.toUpperCase(), key:x.merchant.toUpperCase(), self:false, live:true })));
+}
+function livePseudo() {
+  if (memo.lp !== undefined) return memo.lp;
+  const lt = liveTx(), L = sorted()[0];
+  if (!lt.length || !L) return (memo.lp = null);
+  const main = mainAcc(L), sum = r2(lt.reduce((s, t) => s + t.amount, 0));
+  const last = lt.reduce((m, t) => t.date > m ? t.date : m, L.end), today = iso(new Date());
+  return (memo.lp = { id:"live", live:true, number:"", start:L.end, end: today > last ? today : last, spent:-sum, n:lt.length,
+    accounts: L.accounts.map(a => a === main ? { ...a, opening:a.closing, closing:r2(a.closing + sum), ok:null } : { ...a }), txs:[] });
+}
+const hash = (s) => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); };
+const MFR = { janv:1, jan:1, fevr:2, févr:2, fev:2, fév:2, mars:3, mar:3, avr:4, mai:5, juin:6, juil:7, aout:8, août:8, sept:9, sep:9, oct:10, nov:11, dec:12, déc:12 };
+function looseDate(s) {
+  s = String(s).trim(); let m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/))) return `${m[1]}-${m[2]}-${m[3]}T${m[4] || "12"}:${m[5] || "00"}`;
+  if ((m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\D+(\d{1,2})[:h](\d{2}))?/))) { const y = m[3].length === 2 ? "20" + m[3] : m[3]; return `${y}-${pad(m[2])}-${pad(m[1])}T${pad(m[4] || 12)}:${m[5] || "00"}`; }
+  if ((m = s.toLowerCase().match(/(\d{1,2})\s+([a-zéûè]+)\.?\s+(\d{4})(?:\D+(\d{1,2})[:h](\d{2}))?/))) { const mo = MFR[m[2]] || MFR[m[2].slice(0, 4)] || MFR[m[2].slice(0, 3)]; if (mo) return `${m[3]}-${pad(mo)}-${pad(m[1])}T${pad(m[4] || 12)}:${m[5] || "00"}`; }
+  return null;
+}
+function looseAmount(s) {
+  let x = String(s).replace(/[^\d,.\-]/g, "");
+  if (x.includes(",") && x.includes(".")) x = x.lastIndexOf(",") > x.lastIndexOf(".") ? x.replace(/\./g, "").replace(",", ".") : x.replace(/,/g, "");
+  else x = x.replace(",", ".");
+  return Math.abs(parseFloat(x));
+}
+function parseApplePay(text) {
+  const out = [], seen = {};
+  for (const raw of String(text).split(/\r?\n/)) {
+    const parts = raw.trim().split(/\s*;\s*/); if (parts.length < 3) continue;
+    const date = looseDate(parts[0]), merchant = parts[1].trim(), amount = r2(looseAmount(parts.slice(2).join(";")));
+    if (!date || !merchant || !(amount > 0)) continue;
+    const base = date + "|" + merchant.toUpperCase() + "|" + amount; seen[base] = (seen[base] || 0) + 1;
+    out.push({ id:"ap-" + hash(base + "|" + seen[base]), date, merchant, amount });
+  }
+  return out;
+}
+// A statement's card payments carry the purchase date at the end of their title ("… 26.08.26").
+function purgeLive(st) {
+  if (!S.live || !S.live.length) return 0;
+  const cards = st.txs.filter(t => t.type === "cb" && t.amount < 0).map(t => { const m = t.title.match(/(\d{2})\.(\d{2})\.(\d{2})\s*$/); return { amt:-t.amount, d: m ? `20${m[3]}-${m[2]}-${m[1]}` : t.date, used:false }; });
+  const keep = [], done = new Set(S.liveDone || []);
+  for (const x of [...S.live].sort((a, b) => a.date.localeCompare(b.date))) {
+    const d = x.date.slice(0, 10);
+    const hit = d <= addDays(st.end, 2) && cards.find(c => !c.used && Math.abs(c.amt - x.amount) < 0.005 && Math.abs(days(c.d, d)) <= 2);
+    if (hit) { hit.used = true; done.add(x.id); }
+    else if (d <= addDays(st.end, -4)) done.add(x.id);
+    else keep.push(x);
+  }
+  const removed = S.live.length - keep.length;
+  S.live = keep; S.liveDone = [...done];
+  return removed;
+}
 function allTx() {
   if (memo.all) return memo.all;
-  const a = S.statements.flatMap(s => s.txs.map(t => ({ ...t, sid: s.id, cat: catOf(t) })));
+  const a = S.statements.flatMap(s => s.txs.map(t => ({ ...t, sid: s.id, cat: catOf(t) }))).concat(liveTx().map(t => ({ ...t, cat: catOf(t) })));
   a.sort((x, y) => y.date.localeCompare(x.date) || x.id.localeCompare(y.id, undefined, { numeric:true }));
   return (memo.all = a);
 }
 const sorted = () => memo.sorted || (memo.sorted = [...S.statements].sort((a, b) => b.end.localeCompare(a.end)));
-const curStmt = () => S.statements.find(s => s.id === S.period) || sorted()[0];
+const curStmt = () => (S.period === "live" && livePseudo()) || S.statements.find(s => s.id === S.period) || sorted()[0];
 const periodTx = (sid) => allTx().filter(t => t.sid === sid);
-const periodName = (s) => { const [y, m] = s.end.split("-").map(Number); return title(MONTHS[m - 1]) + " " + y; };
+const periodName = (s) => { if (s.live) return "En cours"; const [y, m] = s.end.split("-").map(Number); return title(MONTHS[m - 1]) + " " + y; };
 const mainAcc = (s) => s && (s.accounts.find(a => /^Compte/.test(a.name)) || s.accounts[0]);
 const kindOf = (t) => CATS[t.cat] ? CATS[t.cat].k : "out";
 function stats(txs) {
@@ -798,7 +857,7 @@ function ring(pct, color) {
 /* ---------- shared pieces ---------- */
 const icon = (cat, name) => { const c = CATS[cat] || CATS.autres; return `<span class="ico" style="background:${c.c}" aria-hidden="true">${GLYPHS[cat] ? SVG(GLYPHS[cat]) : esc(initials(c.base ? name : c.l))}</span>`; };
 function txRow(t) {
-  const sub = [CATS[t.cat].l, t.acct !== "Compte Courant Postal" ? t.acct : "", S.settings.notes[t.id] ? "Note" : ""].filter(Boolean).join(" · ");
+  const sub = [CATS[t.cat].l, t.live ? "Apple Pay · provisoire" : "", t.acct !== "Compte Courant Postal" ? t.acct : "", S.settings.notes[t.id] ? "Note" : ""].filter(Boolean).join(" · ");
   return `<button class="row-tx" data-tx="${esc(t.id)}">${icon(t.cat, t.merchant)}<div><div class="t">${esc(title(t.merchant))}</div><div class="s">${esc(sub)}</div></div><div class="a num ${t.amount > 0 ? "pos" : ""}">${eurS(t.amount)}</div></button>`;
 }
 function emptyState() {
@@ -826,16 +885,20 @@ function viewHome() {
   const count = firstHome && !matchMedia("(prefers-reduced-motion: reduce)").matches; firstHome = false;
   return `
   <section class="hero">
-    <div><div class="label">${esc(main.name)} · au ${sDate(s.end)}</div><div class="big num" ${count ? `data-count="${main.closing}"` : ""}>${eur(main.closing)}</div></div>
+    <div><div class="label">${s.live ? "Solde estimé aujourd'hui" : `${esc(main.name)} · au ${sDate(s.end)}`}</div><div class="big num" ${count ? `data-count="${main.closing}"` : ""}>${eur(main.closing)}</div></div>
     <div class="spark">${spark(dailyBalance(s))}</div>
     ${savings.length ? `<div class="row">${savings.map(a => `<div class="pill"><span>${esc(a.name)}</span><b class="num">${eur(a.closing)}</b></div>`).join("")}</div>` : ""}
-    <div class="verified">${allOk ? SVG('<path d="M20 6L9 17l-5-5"/>') + "Relevé vérifié : les totaux correspondent à la banque" : "Attention : un total ne correspond pas, vérifiez les opérations"}</div>
+    <div class="verified">${s.live ? `Relevé du ${sDate(s.start)} moins vos ${s.n} paiements Apple Pay depuis. Les virements et prélèvements arriveront avec le relevé.` : allOk ? SVG('<path d="M20 6L9 17l-5-5"/>') + "Relevé vérifié : les totaux correspondent à la banque" : "Attention : un total ne correspond pas, vérifiez les opérations"}</div>
   </section>
-  <div class="kpis">
+  ${s.live ? (() => { const nd = Math.max(days(s.start, iso(new Date())), 1), d = dailyBudget(); return `<div class="kpis">
+    <div class="kpi"><span class="label">Apple Pay</span><b class="num">${eur(s.spent)}</b></div>
+    <div class="kpi"><span class="label">Par jour</span><b class="num ${d.inc && s.spent / nd > d.perDay ? "bad" : "pos"}">${eur(s.spent / nd)}</b></div>
+    <div class="kpi"><span class="label">Budget / jour</span><b class="num">${d.inc ? eur(d.perDay) : "—"}</b></div></div>`; })() : `<div class="kpis">
     <div class="kpi"><span class="label">Revenus</span><b class="num pos">${eur(st.inc)}</b></div>
     <div class="kpi"><span class="label">Dépenses</span><b class="num">${eur(st.out)}</b></div>
     <div class="kpi"><span class="label">Bilan</span><b class="num ${st.net < 0 ? "bad" : "pos"}">${eurS(st.net)}</b></div>
-  </div>
+  </div>`}
+  ${S.live && S.live.length ? "" : `<button class="tile" data-go="import"><span class="gl">${SVG('<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2"/>')}</span><div><span class="label">Dépenses en temps réel</span><b>Suivre vos paiements Apple Pay</b><span class="small muted">Automatique avec l'app Raccourcis</span></div>${CHEV}</button>`}
   ${(() => { const d = dailyBudget(); return d.inc ? `<button class="tile" data-nav="forecast"><span class="gl">${SVG('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h3"/>')}</span><div><span class="label">Budget du jour</span><b class="num ${d.perDay < 0 ? "bad" : ""}">${eur(d.perDay)} par jour</b><span class="small muted">${d.actual != null ? `Le mois dernier : ${eur(d.actual)} par jour` : "Pour les dépenses du quotidien"}</span></div>${CHEV}</button>` : ""; })()}
   ${fc ? `<button class="tile" data-nav="forecast"><span class="gl">${SVG('<path d="M3 17l5-5 4 3 7-8M15 7h4v4"/>')}</span><div><span class="label">Solde prévu le ${sDate(fc.end)}</span><b class="num ${fc.end_v < 0 ? "bad" : ""}">${eur(fc.end_v)}</b><span class="small muted">${fc.min.v < 0 ? `Découvert possible vers le ${sDate(fc.min.date)}` : `${fc.events.length} opérations prévues d'ici là`}</span></div>${CHEV}</button>` : ""}
   <section class="card"><h2>Où part votre argent<span class="sub">du ${sDate(s.start)} au ${sDate(s.end)}</span></h2>
@@ -1553,6 +1616,27 @@ function viewImport() {
     <button class="btn block" data-act="pick-pdf">${SVG('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>')}Choisir un ou plusieurs PDF</button>
     ${msg ? `<div class="insights" style="margin-top:12px">${msg.map(([c, h]) => `<div class="ins ${c}"><i></i><p>${h}</p></div>`).join("")}</div>` : ""}
   </section>
+  <section class="card" id="applepay"><h2>Dépenses Apple Pay<span class="sub">en temps réel</span></h2>
+    ${S.live && S.live.length ? `<p style="margin:-4px 0 0"><b>${plural(S.live.length, "paiement", "paiements")}</b> en attente du relevé · dernier le ${esc(dDate(S.live.reduce((m, x) => x.date > m ? x.date : m, "").slice(0, 10)))}.</p>` : `<p class="small muted" style="margin:-4px 0 0">Deux raccourcis à créer une fois. Ensuite, chaque paiement Apple Pay arrive tout seul dans l'appli quand vous l'ouvrez depuis l'icône.</p>`}
+    <details style="margin-top:12px" ${S.live && S.live.length ? "" : "open"}><summary style="font-weight:700;cursor:pointer">1. Noter chaque paiement</summary>
+      <ol class="steps" style="margin-top:10px">
+        <li>App <b>Raccourcis</b> › onglet <b>Automatisation</b> › <b>+</b> › <b>Transaction</b>.</li>
+        <li>Cochez votre carte La Banque Postale, choisissez <b>Exécuter immédiatement</b>, puis <b>Suivant</b> › <b>Nouveau raccourci vide</b>.</li>
+        <li>Ajoutez l'action <b>Texte</b>. Écrivez, en prenant les variables dans la barre au-dessus du clavier : <b>Date actuelle</b> <code>;</code> <b>Marchand</b> <code>;</code> <b>Montant</b></li>
+        <li>Ajoutez l'action <b>Ajouter au fichier texte</b>, fichier <code>depenses-apple-pay.txt</code>, <b>Créer une ligne</b> activé. Terminé.</li>
+      </ol></details>
+    <details style="margin-top:10px" ${S.live && S.live.length ? "" : "open"}><summary style="font-weight:700;cursor:pointer">2. L'icône qui ouvre l'appli</summary>
+      <ol class="steps" style="margin-top:10px">
+        <li>Raccourcis › onglet <b>Raccourcis</b> › <b>+</b>, nommez-le <b>Mes Comptes</b>.</li>
+        <li>Action <b>Obtenir le fichier</b> : dossier <b>Raccourcis</b>, chemin <code>depenses-apple-pay.txt</code>. Désactivez <b>Afficher le sélecteur</b> et <b>Erreur si introuvable</b>.</li>
+        <li>Action <b>Encoder l'URL</b>.</li>
+        <li>Action <b>Ouvrir les URL</b> avec : <code style="word-break:break-all">${esc(location.origin + location.pathname)}?ap=</code> suivi de la variable <b>Texte encodé</b>.</li>
+        <li>Touchez le nom du raccourci › <b>Ajouter à l'écran d'accueil</b>. Pour l'icône portefeuille : <b>Choisir une photo</b> avec l'image enregistrée par le bouton ci-dessous.</li>
+        <li>Supprimez l'ancienne icône Mes Comptes. Ouvrez désormais l'appli avec la nouvelle.</li>
+      </ol>
+      <button class="btn ghost block" data-act="save-icon" style="margin-top:10px">Enregistrer l'icône portefeuille</button></details>
+    <button class="linkish" data-act="pick-ap" style="margin-top:12px">Ou importer le fichier à la main</button>
+  </section>
   <section class="card"><h2>Relevés importés<span class="sub">${ss.length}</span></h2>
     ${ss.length ? ss.map(s => `<div class="stmt"><div><b>${esc(periodName(s))}</b><div class="small muted">Du ${sDate(s.start)} au ${sDate(s.end)} · ${s.txs.length} opérations ${s.accounts.every(a => a.ok !== false) ? "· vérifié" : "· à vérifier"}</div></div>
       ${S.confirm === "del:" + s.id ? `<button class="btn sm danger" data-act="del-ok" data-id="${s.id}">Confirmer</button>` : `<button class="btn sm ghost" data-act="del" data-id="${s.id}">Supprimer</button>`}</div>`).join("") : `<p class="muted">Aucun relevé pour l'instant.</p>`}
@@ -1588,7 +1672,7 @@ function isStandalone() { return window.navigator.standalone === true || (window
 function viewData() {
   return `
   ${S.storeError ? `<div class="notice">Le téléphone refuse d'enregistrer les données (navigation privée ?). Ouvrez l'appli depuis l'écran d'accueil.</div>` : ""}
-  ${isStandalone() ? "" : `<section class="card"><h2>Installer sur l'iPhone</h2><ol class="steps"><li>Ouvrez cette page dans <b>Safari</b>.</li><li>Touchez <b>Partager</b> (le carré avec une flèche).</li><li>Choisissez <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li></ol><p class="small muted" style="margin:10px 0 0">Ouvrez ensuite toujours l'appli depuis son icône : c'est là que vos données sont gardées.</p></section>`}
+  ${isStandalone() ? "" : `<section class="card"><h2>Installer sur l'iPhone</h2><ol class="steps"><li>Ouvrez cette page dans <b>Safari</b>.</li><li>Touchez <b>Partager</b> (le carré avec une flèche).</li><li>Choisissez <b>Sur l'écran d'accueil</b>, puis <b>Ajouter</b>.</li></ol><p class="small muted" style="margin:10px 0 0">Ouvrez ensuite toujours l'appli de la même façon : c'est là que vos données sont gardées. Si vous suivez vos paiements Apple Pay, utilisez plutôt l'icône créée avec le raccourci (Plus › Importer des relevés).</p></section>`}
   <section class="card"><h2>Sauvegarde</h2><p class="small muted" style="margin:-4px 0 12px">Gardez une copie dans Fichiers ou iCloud Drive, par exemple une fois par mois. Elle contient vos relevés, catégories, budgets et objectifs.</p>
     <div style="display:flex;flex-direction:column;gap:8px">
     <button class="btn block" data-act="export-json">Télécharger une sauvegarde</button>
@@ -1613,6 +1697,7 @@ function sheetTx(id) {
     ${t.amount < 0 ? `<button class="btn ghost block" data-act="debt-new" data-tx="${esc(t.id)}">${SVG('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/>')}Quelqu'un me doit une partie</button>` : ""}
     <div class="field"><label for="note">Note</label><textarea id="note" placeholder="Ajouter une note (ex. remboursé par Léa)">${esc(S.settings.notes[t.id] || "")}</textarea>
       <button class="btn ghost block" data-act="note-save" data-tx="${esc(t.id)}">Enregistrer la note</button></div>
+    ${t.live ? `<button class="btn ghost block" data-act="live-del" data-tx="${esc(t.id)}">Retirer ce paiement Apple Pay</button>` : ""}
     <button class="btn block" data-act="close">Fermer</button>`, "Détail de l'opération");
 }
 function sheetGoal(id) {
@@ -1718,9 +1803,10 @@ function renderHead() {
     h.innerHTML = SUB[S.view] ? `<button class="back" data-act="back">${SVG('<path d="M15 6l-6 6 6 6"/>')}${esc(BACKL[S.from] || "Plus")}</button><div class="subtitle">${esc(SUB[S.view])}</div>` : `<div class="brand">${S.view === "forecast" ? "Prévisions" : S.view === "savings" ? "Objectifs" : S.view === "more" ? "Plus" : "Mes Comptes"}<small>${esc(subline())}</small></div>`;
     return;
   }
-  if (!S.period || (S.period !== "all" && !ss.some(s => s.id === S.period))) S.period = ss[0].id;
-  if (S.period === "all" && S.view !== "ops") S.period = ss[0].id;
-  const sel = `<select class="period" id="period" aria-label="Période">${ss.map(s => `<option value="${s.id}" ${S.period === s.id ? "selected" : ""}>${esc(periodName(s))}</option>`).join("")}${S.view === "ops" ? `<option value="all" ${S.period === "all" ? "selected" : ""}>Toutes les périodes</option>` : ""}</select>`;
+  const lp = livePseudo();
+  if (!S.period || (S.period === "live" && !lp) || (S.period !== "all" && S.period !== "live" && !ss.some(s => s.id === S.period))) S.period = lp ? "live" : ss[0].id;
+  if (S.period === "all" && S.view !== "ops") S.period = lp ? "live" : ss[0].id;
+  const sel = `<select class="period" id="period" aria-label="Période">${lp ? `<option value="live" ${S.period === "live" ? "selected" : ""}>En cours</option>` : ""}${ss.map(s => `<option value="${s.id}" ${S.period === s.id ? "selected" : ""}>${esc(periodName(s))}</option>`).join("")}${S.view === "ops" ? `<option value="all" ${S.period === "all" ? "selected" : ""}>Toutes les périodes</option>` : ""}</select>`;
   h.innerHTML = SUB[S.view] ? `<button class="back" data-act="back">${SVG('<path d="M15 6l-6 6 6 6"/>')}${esc(BACKL[S.from] || "Plus")}</button><div style="flex:1"></div>${sel}` : `<div class="brand">${S.view === "ops" ? "Opérations" : "Mes Comptes"}<small>${esc(subline())}</small></div>${sel}`;
 }
 function subline() {
@@ -1768,6 +1854,7 @@ async function importFiles(files) {
       if (!st.txs.length) throw new Error("vide");
       const existed = S.statements.some(s => s.id === st.id);
       await saveStatement(st);
+      const gone = purgeLive(st); if (gone) { await persist("live", { live:S.live, done:S.liveDone }); invalidate(); }
       const ok = st.accounts.every(a => a.ok !== false);
       msgs.push([ok ? "" : "warn", `<b>${esc(periodName(st))}</b> : ${st.txs.length} opérations ${existed ? "mises à jour" : "importées"}. ${ok ? "Les totaux correspondent au relevé." : "Un total ne correspond pas : vérifiez les opérations."}`]);
       for (const a of alertsFor(st)) msgs.push(a);
@@ -1780,6 +1867,26 @@ async function importFiles(files) {
   }
   S.importMsg = msgs; render();
   if (S.statements.length && navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+}
+// Payments arrive either in the link the "Mes Comptes" shortcut opens (?ap=…) or, as a fallback, from the file itself.
+async function ingestApplePay(text) {
+  const rows = parseApplePay(text);
+  const L = sorted()[0], done = new Set(S.liveDone || []), have = new Set((S.live || []).map(x => x.id));
+  const fresh = rows.filter(x => !done.has(x.id) && !have.has(x.id) && (!L || x.date.slice(0, 10) > addDays(L.end, -4)));
+  S.live = (S.live || []).concat(fresh);
+  for (const st of S.statements) purgeLive(st);
+  await persist("live", { live:S.live, done:S.liveDone || [] });
+  invalidate(); if (livePseudo()) S.period = "live";
+  const kept = new Set(S.live.map(x => x.id));
+  return { found: rows.length, fresh: fresh.filter(x => kept.has(x.id)).length };
+}
+const plural = (n, one, many) => n + " " + (n > 1 ? many : one);
+async function importApplePay(file) {
+  try {
+    const r = await ingestApplePay(await file.text());
+    toast(!r.found ? "Aucun paiement trouvé dans ce fichier." : r.fresh ? `${plural(r.fresh, "nouveau paiement", "nouveaux paiements")} Apple Pay.` : "Déjà à jour : aucun nouveau paiement.");
+    go("home");
+  } catch (e) { toast("Ce fichier n'a pas pu être lu."); }
 }
 async function saveFile(filename, data, type) {
   const blob = data instanceof Blob ? data : new Blob([data], { type: type || "application/octet-stream" });
@@ -1856,6 +1963,9 @@ document.addEventListener("click", async (e) => {
     case "back": go(BACKL[S.from] ? S.from : "more"); break;
     case "pick-pdf": $("#file-pdf").click(); break;
     case "pick-json": $("#file-json").click(); break;
+    case "pick-ap": $("#file-ap").click(); break;
+    case "save-icon": try { saveFile("icone-mes-comptes.png", await (await fetch("icons/icon-512.png")).blob(), "image/png"); } catch (err) { toast("Icône indisponible hors connexion."); } break;
+    case "live-del": S.live = (S.live || []).filter(x => x.id !== el.dataset.tx); S.liveDone = [...(S.liveDone || []), el.dataset.tx]; persist("live", { live:S.live, done:S.liveDone }); invalidate(); closeSheet(); render(); toast("Paiement retiré."); break;
     case "note-save": { const v = $("#note").value.trim(); if (v) S.settings.notes[el.dataset.tx] = v; else delete S.settings.notes[el.dataset.tx]; saveSettings(); render(); toast("Note enregistrée."); break; }
     case "bud-edit": S.editBudget = el.dataset.k; render(); setTimeout(() => { const i = $("#bud-" + el.dataset.k); if (i) i.focus(); }, 0); break;
     case "bud-clear": delete S.settings.budgets[el.dataset.k]; S.editBudget = null; saveSettings(); render(); break;
@@ -1873,7 +1983,7 @@ document.addEventListener("click", async (e) => {
     case "export-csv": exportCSV(); break;
     case "export-json": saveFile(`mes-comptes-sauvegarde-${iso(new Date())}.json`, JSON.stringify({ app:"mes-comptes", version:2, savedAt:new Date().toISOString(), statements:S.statements, settings:S.settings }), "application/json"); break;
     case "wipe": S.confirm = "wipe"; render(); break;
-    case "wipe-ok": S.confirm = null; S.statements = []; S.settings = defaults(); await persist("statements", []); saveSettings(); S.importMsg = null; go("home"); toast("Toutes vos données ont été effacées."); break;
+    case "wipe-ok": S.confirm = null; S.statements = []; S.settings = defaults(); S.live = []; S.liveDone = []; await persist("statements", []); await persist("live", { live:[], done:[] }); saveSettings(); S.importMsg = null; go("home"); toast("Toutes vos données ont été effacées."); break;
     case "lock-on": S.pad = { mode:"set1", value:"" }; renderLock(); break;
     case "lock-off": S.confirm = "lock-off"; render(); break;
     case "lock-off-ok": S.lock = { enabled:false }; S.confirm = null; await saveLock(); render(); toast("Verrouillage désactivé."); break;
@@ -1955,6 +2065,7 @@ document.addEventListener("change", (e) => {
   if (id === "sim-real") updateSim();
   if (id === "file-pdf" && e.target.files.length) { const fs = [...e.target.files]; e.target.value = ""; importFiles(fs); }
   if (id === "file-json" && e.target.files.length) { const f = e.target.files[0]; e.target.value = ""; restoreJSON(f); }
+  if (id === "file-ap" && e.target.files.length) { const f = e.target.files[0]; e.target.value = ""; importApplePay(f); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); if (S.pad && /^[0-9]$/.test(e.key)) padDigit(e.key); if (S.pad && e.key === "Backspace") padDigit("del"); });
 let hiddenAt = 0;
@@ -1969,12 +2080,21 @@ render();
 requestAnimationFrame(() => { const l = document.createElement("link"); l.rel = "stylesheet"; l.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap"; document.head.appendChild(l); });
 (async () => {
   try {
-    const [sts, set, lock] = await Promise.all([Store.get("statements"), Store.get("settings"), Store.get("lock")]);
+    const [sts, set, lock, live] = await Promise.all([Store.get("statements"), Store.get("settings"), Store.get("lock"), Store.get("live")]);
     if (Array.isArray(sts)) S.statements = sts;
     if (set) S.settings = { ...defaults(), ...set };
+    if (live) { S.live = live.live || []; S.liveDone = live.done || []; }
     if (lock && lock.enabled) { S.lock = lock; lockNow(); }
   } catch (e) { S.storeError = true; }
-  S.ready = true; invalidate(); render();
+  S.ready = true; invalidate();
+  const ap = new URLSearchParams(location.search).get("ap");
+  if (ap !== null) {
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    try { const r = await ingestApplePay(ap); if (r.fresh) toast(`${plural(r.fresh, "nouveau paiement", "nouveaux paiements")} Apple Pay.`); } catch (e) {}
+    S.view = "home";
+  }
+  render();
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 })();
 if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
 })();

@@ -65,8 +65,10 @@ body.hiding main,body.hiding header{filter:blur(18px)}
 
 main{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 28px)}
 #view{display:flex;flex-direction:column;gap:14px;padding-block:4px 0}
-#view.enter{animation:enter .22s ease-out}
-@keyframes enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#view.enter>*{animation:enter .5s cubic-bezier(.2,.8,.2,1) both}
+#view.enter>:nth-child(2){animation-delay:.05s} #view.enter>:nth-child(3){animation-delay:.1s} #view.enter>:nth-child(4){animation-delay:.15s}
+#view.enter>:nth-child(5){animation-delay:.2s} #view.enter>:nth-child(6){animation-delay:.25s} #view.enter>:nth-child(n+7){animation-delay:.3s}
+@keyframes enter{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
 /* cards */
 .card{background:var(--surface);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);min-width:0}
@@ -296,6 +298,68 @@ input[type=range]{width:100%;accent-color:var(--accent);height:30px;margin:0}
 .cal-d small{font-size:10px;font-weight:600;opacity:.85;min-height:10px}
 .legend-inline{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:6px}
 .legend-inline span{display:inline-flex;align-items:center;gap:6px}
+/* forecast */
+.fc-hero{background:linear-gradient(140deg,var(--accent),var(--accent-2))}
+.fc-hero.warn{background:linear-gradient(140deg,#B86A00,#D98C1F);color:#fff}
+.fc-hero.bad{background:linear-gradient(140deg,#B3302A,#D9534A);color:#fff}
+.mood{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;background:rgba(255,255,255,.18);border-radius:999px;padding:7px 12px 7px 9px;font-size:13px;font-weight:700}
+.mood svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.curve{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;margin:0 -4px}
+.curve svg{display:block;overflow:visible}
+.curve .tip{position:absolute;top:-8px;background:var(--fg);color:var(--bg);border-radius:12px;padding:6px 10px;font-size:12px;display:flex;flex-direction:column;align-items:flex-start;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.18);white-space:nowrap;z-index:2}
+.curve .tip b{font-size:16px;font-family:var(--f-display)} .curve .tip b.bad{color:#FF9C92}
+.curve .tip small{opacity:.8;font-size:11.5px}
+.ctag{font-size:12px;font-weight:800;fill:var(--fg)!important;paint-order:stroke;stroke:var(--surface);stroke-width:4px;stroke-linejoin:round}
+.ctag.bad{fill:var(--danger)!important}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s cubic-bezier(.4,0,.2,1) .15s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.fade-in{animation:fade 1s ease-out .4s both}
+.pop{transform-box:fill-box;transform-origin:center;animation:pop .35s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes pop{from{transform:scale(0)}}
+.pulse{transform-box:fill-box;transform-origin:center;animation:pulse 1.8s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.5);opacity:.5}}
+.grow-y{transform-box:fill-box;transform-origin:bottom;animation:growy .6s cubic-bezier(.2,.8,.2,1) both}
+.grow-y.down{transform-origin:top}
+@keyframes growy{from{transform:scaleY(0)}}
+.tl{position:relative;display:flex;flex-direction:column}
+.tl::before{content:"";position:absolute;left:55px;top:14px;bottom:14px;width:2px;border-radius:2px;background:var(--line)}
+.tl-i{position:relative;display:grid;grid-template-columns:42px 12px 1fr auto;gap:10px;align-items:center;padding:9px 0;background:none;border:0;text-align:left;width:100%;animation:enter .45s cubic-bezier(.2,.8,.2,1) both}
+.tl-i.past{opacity:.5}
+.tl-d{display:flex;flex-direction:column;align-items:center;font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;line-height:1.1}
+.tl-d b{font-family:var(--f-display);font-size:18px;color:var(--fg)}
+.tl-dot{width:12px;height:12px;border-radius:50%;box-shadow:0 0 0 3px var(--surface);z-index:1}
+.tl-t{min-width:0;display:flex;flex-direction:column}
+.tl-t b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl-t small{font-size:12.5px;color:var(--muted)}
+.tl-i>b{font-weight:700;white-space:nowrap}
+.chip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-2px}
+.vs{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+.vs>div{display:grid;grid-template-columns:96px 1fr 64px;gap:10px;align-items:center;font-size:13px}
+.vs>div>span{color:var(--muted);font-weight:600}
+.vs>div>b{text-align:right}
+.stack{display:flex;gap:3px;height:14px;border-radius:8px;overflow:hidden}
+.stack i{display:block;transform-origin:left;animation:grow .7s cubic-bezier(.2,.8,.2,1) both}
+/* operations */
+.chip-sep{flex:none;width:1px;background:var(--line);margin:4px 2px}
+.chips.cats{gap:8px;margin:0 -16px;padding:2px 16px 4px}
+.cchip{flex:none;display:grid;grid-template-columns:30px auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;text-align:left;background:var(--surface);border:2px solid transparent;border-radius:16px;padding:7px 12px 7px 7px;box-shadow:var(--shadow)}
+.cchip .ico{grid-row:span 2;width:30px;height:30px;border-radius:10px;font-size:11px}
+.cchip .ico svg{width:16px;height:16px}
+.cchip span{font-size:12px;font-weight:600;color:var(--muted);white-space:nowrap}
+.cchip b{font-size:14px;white-space:nowrap}
+.cchip[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 12%,var(--surface))}
+.daybars{padding:12px 14px 8px}
+.db-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.dbar{cursor:pointer}
+.catpick summary{list-style:none;display:grid;grid-template-columns:40px 1fr auto;gap:12px;align-items:center;background:var(--surface-2);border-radius:16px;padding:10px 12px;cursor:pointer}
+.catpick summary::-webkit-details-marker{display:none}
+.catpick summary>span{display:flex;flex-direction:column;min-width:0}
+.catpick[open] summary{margin-bottom:6px}
+.catpick[open] summary .linkish{visibility:hidden}
+.tile .mini{grid-column:1/-1;height:34px;color:var(--accent);margin:-4px 0 -2px}
+.tile .mini svg{width:100%;height:100%;display:block}
+.tile .mini.bad{color:var(--danger)}
+@media (prefers-reduced-motion:reduce){.draw{stroke-dashoffset:0}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -704,19 +768,30 @@ function merchants(txs) {
   return Object.values(m).map(x => ({ ...x, total:r2(x.total) }));
 }
 // Charges that come back regularly: direct debits, known subscriptions, or the same payee in several statements.
+// How often each one comes back is read from the months it was seen in, so nothing has to be set by hand:
+// a gap of 10 months or more means yearly, a monthly charge missing for 3 months has stopped.
 function recurring() {
   if (memo.rec) return memo.rec;
-  const seen = {};
+  const seen = {}, L = sorted()[0];
+  const mi = (s) => +s.slice(0, 4) * 12 + +s.slice(5, 7);
   for (const t of allTx()) {
-    if (t.amount >= 0 || kindOf(t) !== "out") continue;
-    const fixed = t.type === "prelevement" || ["abos","telecom","logement","sport","credits"].includes(t.cat);
-    if (!seen[t.key]) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:-t.amount, date:t.date, sids:new Set(), fixed:false, n:0 };
-    const r = seen[t.key]; r.sids.add(t.sid); r.n++; r.fixed = r.fixed || fixed;
+    if (t.amount >= 0 || kindOf(t) !== "out" || t.live) continue;
+    const fixed = t.type === "prelevement" || ["abos","telecom","logement","credits"].includes(t.cat);
+    if (!seen[t.key]) seen[t.key] = { key:t.key, name:t.merchant, cat:t.cat, last:-t.amount, date:t.date, sids:new Set(), months:new Set(), fixed:false, n:0 };
+    const r = seen[t.key]; r.sids.add(t.sid); r.months.add(mi(t.date)); r.n++; r.fixed = r.fixed || fixed;
   }
+  const latest = L ? mi(L.end) : 0;
+  const autoFreq = (r) => {
+    const ms = [...r.months].sort((a, b) => a - b), gaps = ms.slice(1).map((m, i) => m - ms[i]), ago = latest - ms[ms.length - 1];
+    if (gaps.length && Math.min(...gaps) >= 10) return "y";
+    if (ago >= 3) return gaps.length ? "off" : "y";
+    return "m";
+  };
   const list = Object.values(seen).filter(r => r.fixed || (r.sids.size >= 2 && r.n <= r.sids.size * 1.5))
-    .map(r => ({ ...r, freq: S.settings.recur[r.key] || "m" })).sort((a, b) => b.last - a.last);
+    .map(r => { const auto = autoFreq(r); return { ...r, auto, freq: S.settings.recur[r.key] || auto }; }).sort((a, b) => b.last - a.last);
   return (memo.rec = list);
 }
+const FREQ = { m:"Tous les mois", y:"Une fois par an", off:"Plus prévu" };
 const monthly = (r) => r.freq === "y" ? r.last / 12 : r.freq === "off" ? 0 : r.last;
 function regularIncome() {
   const seen = {};
@@ -741,7 +816,7 @@ function forecast() {
   const nextIn = (d, months) => { let x = d; while (x <= start) x = addMonths(x, months); return x; };
   const events = [];
   const lk = loanKeys();
-  for (const r of recurring()) { if (r.freq === "off" || lk.has(r.key)) continue; const d = nextIn(r.date, r.freq === "y" ? 12 : 1); if (d <= end) events.push({ date:d, amount:-r.last, name:r.name, cat:r.cat }); }
+  for (const r of recurring()) { if (r.freq === "off" || lk.has(r.key)) continue; const d = nextIn(r.date, r.freq === "y" ? 12 : 1); if (d <= end) events.push({ date:d, amount:-r.last, name:r.name, cat:r.cat, rec:r.key }); }
   for (const l of loans()) { const c = loanCalc(l); let d = c.first; while (d <= start) d = addMonths(d, 1); if (d <= end && d <= c.end) events.push({ date:d, amount:-c.total, name:l.name, cat:"credits" }); }
   for (const r of regularIncome()) { const d = nextIn(r.date, 1); if (d <= end) events.push({ date:d, amount:r.last, name:r.name, cat:r.cat }); }
   events.sort((x, y) => x.date.localeCompare(y.date));
@@ -755,6 +830,7 @@ function forecast() {
     v -= daily; for (const e of events) if (e.date === d) v += e.amount;
     pts.push({ date:d, v:r2(v) }); if (v < min.v) min = { v:r2(v), date:d };
   }
+  for (const e of events) { const p = pts.find(q => q.date === e.date); if (p) e.after = p.v; }
   const fixedOut = r2(events.filter(e => e.amount < 0).reduce((s, e) => s - e.amount, 0));
   const incomeIn = r2(events.filter(e => e.amount > 0).reduce((s, e) => s + e.amount, 0));
   return (memo.fc = { L, a, start, end, events, daily:r2(daily), variable:r2(daily * days(start, end)), end_v:r2(v), min, pts, fixedOut, incomeIn });
@@ -823,24 +899,78 @@ function barsSimple(rows) {
   const W = 340, H = 160, L = 8, B = 24, T = 18, max = Math.max(...rows.map(r => r.v), 1), ih = H - B - T, slot = (W - L * 2) / rows.length, bw = slot * 0.56;
   return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Dépenses par jour de la semaine">` + rows.map((r, i) => { const h = (r.v / max) * ih, x = L + slot * i + (slot - bw) / 2, top = T + ih - h; const hi = r.v === max; return `<rect x="${x}" y="${top}" width="${bw}" height="${Math.max(h, 1)}" rx="5" fill="var(--accent)" opacity="${hi ? 1 : .42}"/><text x="${x + bw / 2}" y="${top - 5}" text-anchor="middle" font-size="10" ${hi ? 'style="fill:var(--fg)" font-weight="700"' : ""}>${esc(eur0(r.v).replace(/\s?€/, ""))}</text><text x="${x + bw / 2}" y="${H - 7}" text-anchor="middle" font-size="11">${r.l}</text>`; }).join("") + `</svg>`;
 }
-function lineChart(actual, proj) {
-  const W = 340, H = 200, L = 42, R = 10, T = 14, B = 24;
-  const all = actual.concat(proj); if (all.length < 2) return "";
+// Balance curve: the statement's real days, then the forecast (shaded), with a dot on each expected operation.
+// The points are kept in `curveData` so a finger dragged across the chart can read any day's balance.
+let curveData = null;
+function curve(actual, proj, events) {
+  const W = 340, H = 210, L = 10, R = 10, T = 26, B = 26;
+  const all = actual.concat(actual.length && proj.length && proj[0].date === actual[actual.length - 1].date ? proj.slice(1) : proj);
+  if (all.length < 2) return "";
   const t0 = +D(all[0].date), t1 = +D(all[all.length - 1].date);
-  let lo = Math.min(0, ...all.map(p => p.v)), hi = Math.max(...all.map(p => p.v));
-  const step = niceStep((hi - lo) / 4 || 50); lo = Math.floor(lo / step) * step; hi = Math.ceil(hi / step) * step; if (hi === lo) hi = lo + step;
+  let lo = Math.min(...all.map(p => p.v)), hi = Math.max(...all.map(p => p.v));
+  const pad = (hi - lo) * 0.1 || 50; lo -= pad; hi += pad;
   const x = (d) => L + ((+D(d) - t0) / (t1 - t0 || 1)) * (W - L - R), y = (v) => T + ((hi - v) / (hi - lo)) * (H - T - B);
-  let g = ""; for (let v = lo; v <= hi + 0.001; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" ${Math.abs(v) < 0.001 ? 'stroke-width="1.6"' : ""}/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end" font-size="10">${kfmt(v)}</text>`;
-  const path = (pts) => pts.map((p, i) => `${i ? "L" : "M"}${x(p.date).toFixed(1)},${y(p.v).toFixed(1)}`).join("");
-  const area = actual.length > 1 ? `<path d="${path(actual)}L${x(actual[actual.length - 1].date).toFixed(1)},${y(lo)}L${x(actual[0].date).toFixed(1)},${y(lo)}Z" fill="var(--accent)" opacity=".1"/>` : "";
-  const last = (proj.length ? proj : actual)[(proj.length ? proj : actual).length - 1];
-  const xl = [all[0], actual[actual.length - 1], all[all.length - 1]].filter((p, i, a) => p && a.findIndex(q => q && q.date === p.date) === i);
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Évolution du solde">${g}${area}
-    ${actual.length > 1 ? `<path d="${path(actual)}" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round"/>` : ""}
-    ${proj.length > 1 ? `<path d="${path(proj)}" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-dasharray="5 5" stroke-linejoin="round" opacity=".8"/>` : ""}
-    ${actual.length ? `<line x1="${x(actual[actual.length - 1].date)}" x2="${x(actual[actual.length - 1].date)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-dasharray="2 3" opacity=".6"/>` : ""}
-    <circle cx="${x(last.date)}" cy="${y(last.v)}" r="5" fill="${last.v < 0 ? "var(--danger)" : "var(--accent)"}" stroke="var(--surface)" stroke-width="2"/>
-    ${xl.map((p, i) => `<text x="${x(p.date)}" y="${H - 7}" text-anchor="${i === 0 ? "start" : i === xl.length - 1 ? "end" : "middle"}" font-size="10.5">${sDate(p.date)}</text>`).join("")}
+  const pts = all.map(p => ({ ...p, px:x(p.date), py:y(p.v) }));
+  const path = (ps) => ps.map((p, i) => `${i ? "L" : "M"}${p.px.toFixed(1)},${p.py.toFixed(1)}`).join("");
+  const nA = actual.length, split = nA ? pts[nA - 1] : pts[0];
+  const zero = Math.min(Math.max((y(0) - T) / (H - T - B), 0), 1);
+  const today = iso(new Date()), tp = pts.find(p => p.date === today);
+  const end = pts[pts.length - 1], min = pts.reduce((m, p) => p.v < m.v ? p : m, pts[0]);
+  const ev = events.filter(e => e.after != null).map((e, i) => { const px = x(e.date), py = y(e.after); return `<circle class="pop" style="animation-delay:${600 + i * 40}ms" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="4" fill="${e.amount > 0 ? "var(--in)" : "var(--surface)"}" stroke="${e.amount > 0 ? "var(--surface)" : (CATS[e.cat] || CATS.autres).c}" stroke-width="2"/>`; }).join("");
+  const tag = (p, txt, cls, below) => { const anchor = p.px > W - 60 ? "end" : p.px < 60 ? "start" : "middle"; return `<text class="ctag ${cls}" x="${p.px.toFixed(1)}" y="${(below ? p.py + 18 : p.py - 10).toFixed(1)}" text-anchor="${anchor}">${esc(txt)}</text>`; };
+  curveData = { pts, events, W };
+  return `<div class="curve"><svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Évolution du solde jour par jour">
+    <defs>
+      <linearGradient id="cv-stroke" gradientUnits="userSpaceOnUse" x1="0" x2="0" y1="${T}" y2="${H - B}"><stop offset="${zero}" stop-color="var(--accent)"/><stop offset="${zero}" stop-color="var(--danger)"/></linearGradient>
+      <linearGradient id="cv-fill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".28"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient>
+    </defs>
+    ${nA && proj.length ? `<rect x="${split.px.toFixed(1)}" y="${T - 18}" width="${(W - R - split.px).toFixed(1)}" height="${H - B - T + 18}" rx="10" fill="var(--surface-2)"/><text x="${(split.px + 8).toFixed(1)}" y="${T - 5}" font-size="10" font-weight="700" letter-spacing=".06em">PRÉVISION</text>` : ""}
+    ${lo < 0 && hi > 0 ? `<line x1="${L}" x2="${W - R}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--danger)" stroke-dasharray="3 4" opacity=".55"/><text x="${W - R}" y="${(y(0) - 4).toFixed(1)}" text-anchor="end" font-size="9.5" style="fill:var(--danger)">0 €</text>` : ""}
+    <path class="fade-in" d="${path(pts)}L${end.px.toFixed(1)},${H - B}L${pts[0].px.toFixed(1)},${H - B}Z" fill="url(#cv-fill)"/>
+    <path class="draw" pathLength="1" d="${path(pts)}" fill="none" stroke="url(#cv-stroke)" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>
+    ${ev}
+    ${tp && tp !== end ? `<line x1="${tp.px.toFixed(1)}" x2="${tp.px.toFixed(1)}" y1="${T}" y2="${H - B}" stroke="var(--fg)" stroke-width="1" opacity=".25"/><circle class="pulse" cx="${tp.px.toFixed(1)}" cy="${tp.py.toFixed(1)}" r="5" fill="var(--fg)"/>` : ""}
+    <circle class="pop" style="animation-delay:900ms" cx="${end.px.toFixed(1)}" cy="${end.py.toFixed(1)}" r="5.5" fill="${end.v < 0 ? "var(--danger)" : "var(--accent)"}" stroke="var(--surface)" stroke-width="2.5"/>
+    ${tag(end, eur0(end.v), end.v < 0 ? "bad" : "")}
+    ${min !== end && min.v < end.v - pad * 0.5 ? tag(min, eur0(min.v), min.v < 0 ? "bad" : "", true) : ""}
+    ${[pts[0], tp && tp !== end && Math.abs(tp.px - pts[0].px) > 40 && Math.abs(end.px - tp.px) > 40 ? { ...tp, lbl:"auj." } : null, end].filter(Boolean).map((p, i, a) => `<text x="${p.px.toFixed(1)}" y="${H - 7}" text-anchor="${i === 0 ? "start" : i === a.length - 1 ? "end" : "middle"}" font-size="10.5" ${p.lbl ? 'font-weight="700"' : ""}>${p.lbl || sDate(p.date)}</text>`).join("")}
+    <g class="scrub" opacity="0"><line y1="${T - 6}" y2="${H - B}" stroke="var(--fg)" stroke-width="1.2"/><circle r="6" fill="var(--surface)" stroke="var(--fg)" stroke-width="2.5"/></g>
+  </svg><div class="tip" hidden></div></div>`;
+}
+function scrubAt(box, clientX) {
+  if (!curveData) return;
+  const r = box.getBoundingClientRect(), sx = (clientX - r.left) / r.width * curveData.W;
+  let p = curveData.pts[0]; for (const q of curveData.pts) if (Math.abs(q.px - sx) < Math.abs(p.px - sx)) p = q;
+  const g = box.querySelector(".scrub"), tip = box.querySelector(".tip"); if (!g || !tip) return;
+  g.setAttribute("opacity", "1"); g.querySelector("line").setAttribute("x1", p.px); g.querySelector("line").setAttribute("x2", p.px);
+  g.querySelector("circle").setAttribute("cx", p.px); g.querySelector("circle").setAttribute("cy", p.py);
+  const evs = curveData.events.filter(e => e.date === p.date);
+  tip.innerHTML = `<span>${esc(D(p.date).toLocaleDateString("fr-FR", { weekday:"short", day:"numeric", month:"short" }))}</span><b class="num ${p.v < 0 ? "bad" : ""}">${eur(p.v)}</b>${evs.map(e => `<small>${esc(title(e.name))} ${eurS(e.amount)}</small>`).join("")}`;
+  tip.hidden = false;
+  const pct = p.px / curveData.W * 100; tip.style.left = `clamp(0px, calc(${pct}% - ${tip.offsetWidth / 2}px), calc(100% - ${tip.offsetWidth}px))`;
+}
+function scrubEnd(box) { setTimeout(() => { const g = box.querySelector(".scrub"), tip = box.querySelector(".tip"); if (g) g.setAttribute("opacity", "0"); if (tip) tip.hidden = true; }, 1800); }
+// "How we get there": opening balance, money in, fixed charges, everyday spending, closing balance.
+function waterfall(fc) {
+  const steps = [
+    { l:"Départ", v:fc.a.closing, kind:"tot" },
+    { l:"Revenus", v:fc.incomeIn, kind:"in" },
+    { l:"Charges", v:-fc.fixedOut, kind:"fix" },
+    { l:"Quotidien", v:-fc.variable, kind:"var" },
+    { l:"Fin", v:fc.end_v, kind:"tot" },
+  ];
+  let run = 0; const bars = steps.map(s => { const from = s.kind === "tot" ? 0 : run, to = s.kind === "tot" ? s.v : run + s.v; run = to; return { ...s, from, to }; });
+  const W = 340, H = 180, T = 22, B = 26, slot = W / bars.length, bw = slot * 0.56;
+  let lo = Math.min(0, ...bars.flatMap(b => [b.from, b.to])), hi = Math.max(...bars.flatMap(b => [b.from, b.to]), 1);
+  const y = (v) => T + ((hi - v) / (hi - lo || 1)) * (H - T - B);
+  const col = { tot:"var(--accent)", in:"var(--in)", fix:"var(--danger)", var:"var(--warn)" };
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Du solde de départ au solde prévu">
+    ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="var(--line)"/>` : ""}
+    ${bars.map((b, i) => { const x = slot * i + (slot - bw) / 2, top = y(Math.max(b.from, b.to)), h = Math.max(Math.abs(y(b.from) - y(b.to)), 2), down = b.to < b.from;
+      return `${i ? `<line x1="${x - (slot - bw)}" x2="${x}" y1="${y(b.from)}" y2="${y(b.from)}" stroke="var(--muted)" stroke-dasharray="2 3" opacity=".6"/>` : ""}
+      <rect class="grow-y ${down ? "down" : ""}" style="animation-delay:${i * 90}ms" x="${x}" y="${top}" width="${bw}" height="${h}" rx="6" fill="${b.kind === "tot" && b.v < 0 ? "var(--danger)" : col[b.kind]}"/>
+      <text x="${x + bw / 2}" y="${top - 6}" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--fg)">${b.v < 0 ? "−" : b.kind === "tot" ? "" : "+"}${esc(kfmt(Math.abs(b.v)))} €</text>
+      <text x="${x + bw / 2}" y="${H - 8}" text-anchor="middle" font-size="11">${b.l}</text>`; }).join("")}
   </svg>`;
 }
 function spark(pts) {
@@ -866,7 +996,6 @@ function emptyState() {
 const catOptions = (sel, kinds) => Object.keys(CATS).filter(k => kinds.includes(CATS[k].k)).map(k => `<option value="${k}" ${sel === k ? "selected" : ""}>${esc(CATS[k].l)}</option>`).join("");
 
 /* ---------- views ---------- */
-let firstHome = true;
 function viewHome() {
   const s = curStmt(); if (!s) return emptyState();
   const txs = periodTx(s.id), st = stats(txs), main = mainAcc(s);
@@ -882,10 +1011,9 @@ function viewHome() {
   if (small.length >= 8) ins.push(["warn", `<b>${small.length} petites dépenses</b> de moins de 5 € : ${eur(-small.reduce((a, t) => a + t.amount, 0))} au total.`]);
   const rate = st.inc > 0 ? Math.round((st.net / st.inc) * 100) : null;
   if (rate != null) ins.push([rate < 0 ? "bad" : "", rate < 0 ? `Vous avez dépensé plus que vos revenus ce mois-ci (${eurS(st.net)}).` : `Vous avez mis de côté <b>${rate} %</b> de vos revenus (${eurS(st.net)}).`]);
-  const count = firstHome && !matchMedia("(prefers-reduced-motion: reduce)").matches; firstHome = false;
   return `
   <section class="hero">
-    <div><div class="label">${s.live ? "Solde estimé aujourd'hui" : `${esc(main.name)} · au ${sDate(s.end)}`}</div><div class="big num" ${count ? `data-count="${main.closing}"` : ""}>${eur(main.closing)}</div></div>
+    <div><div class="label">${s.live ? "Solde estimé aujourd'hui" : `${esc(main.name)} · au ${sDate(s.end)}`}</div><div class="big num" data-count="${main.closing}">${eur(main.closing)}</div></div>
     <div class="spark">${spark(dailyBalance(s))}</div>
     ${savings.length ? `<div class="row">${savings.map(a => `<div class="pill"><span>${esc(a.name)}</span><b class="num">${eur(a.closing)}</b></div>`).join("")}</div>` : ""}
     <div class="verified">${s.live ? `Relevé du ${sDate(s.start)} moins vos ${s.n} paiements Apple Pay depuis. Les virements et prélèvements arriveront avec le relevé.` : allOk ? SVG('<path d="M20 6L9 17l-5-5"/>') + "Relevé vérifié : les totaux correspondent à la banque" : "Attention : un total ne correspond pas, vérifiez les opérations"}</div>
@@ -900,7 +1028,7 @@ function viewHome() {
   </div>`}
   ${S.live && S.live.length ? "" : `<button class="tile" data-go="import"><span class="gl">${SVG('<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2"/>')}</span><div><span class="label">Dépenses en temps réel</span><b>Suivre vos paiements Apple Pay</b><span class="small muted">Automatique avec l'app Raccourcis</span></div>${CHEV}</button>`}
   ${(() => { const d = dailyBudget(); return d.inc ? `<button class="tile" data-nav="forecast"><span class="gl">${SVG('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h3"/>')}</span><div><span class="label">Budget du jour</span><b class="num ${d.perDay < 0 ? "bad" : ""}">${eur(d.perDay)} par jour</b><span class="small muted">${d.actual != null ? `Le mois dernier : ${eur(d.actual)} par jour` : "Pour les dépenses du quotidien"}</span></div>${CHEV}</button>` : ""; })()}
-  ${fc ? `<button class="tile" data-nav="forecast"><span class="gl">${SVG('<path d="M3 17l5-5 4 3 7-8M15 7h4v4"/>')}</span><div><span class="label">Solde prévu le ${sDate(fc.end)}</span><b class="num ${fc.end_v < 0 ? "bad" : ""}">${eur(fc.end_v)}</b><span class="small muted">${fc.min.v < 0 ? `Découvert possible vers le ${sDate(fc.min.date)}` : `${fc.events.length} opérations prévues d'ici là`}</span></div>${CHEV}</button>` : ""}
+  ${fc ? `<button class="tile" data-nav="forecast"><span class="gl">${SVG('<path d="M3 17l5-5 4 3 7-8M15 7h4v4"/>')}</span><div><span class="label">Solde prévu le ${sDate(fc.end)}</span><b class="num ${fc.end_v < 0 ? "bad" : ""}">${eur(fc.end_v)}</b><span class="small muted">${fc.min.v < 0 ? `Découvert possible vers le ${sDate(fc.min.date)}` : `${fc.events.length} opérations prévues d'ici là`}</span></div>${CHEV}<div class="mini ${fc.min.v < 0 ? "bad" : ""}">${spark(fc.pts)}</div></button>` : ""}
   <section class="card"><h2>Où part votre argent<span class="sub">du ${sDate(s.start)} au ${sDate(s.end)}</span></h2>
     ${parts.length ? `<div class="donut-wrap">${donut(st.by, st.out)}<div class="legend">${parts.slice(0, 8).map(([k, v]) => `<button data-cat="${k}"><i class="dot" style="background:${CATS[k].c}"></i><span>${esc(CATS[k].l)}</span><b class="num">${eur(v)}</b></button>`).join("")}</div></div>` : `<p class="muted">Aucune dépense sur cette période.</p>`}
   </section>
@@ -913,11 +1041,26 @@ function viewHome() {
   <button class="btn ghost block" data-act="summary-img">${SVG('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>')}Résumé du mois en image</button>
   <button class="btn ghost block" data-act="pick-pdf">${SVG('<path d="M12 4v12M7 11l5 5 5-5M5 20h14"/>')}Importer un nouveau relevé</button>`;
 }
+// Spending per day of the period; a tap on a column shows that day's operations.
+function dayBars(txs, s, sel) {
+  if (!s || !s.start) return "";
+  const by = {}; for (const t of txs) if (t.amount < 0 && kindOf(t) === "out") by[t.date] = (by[t.date] || 0) - t.amount;
+  const ds = []; for (let d = s.start; d <= s.end && ds.length < 40; d = addDays(d, 1)) ds.push(d);
+  if (ds.length < 2) return "";
+  const W = 340, H = 96, T = 6, B = 18, slot = W / ds.length, bw = Math.max(slot * 0.62, 2), max = Math.max(...ds.map(d => by[d] || 0), 1);
+  const top = ds.reduce((m, d) => (by[d] || 0) > (by[m] || 0) ? d : m, ds[0]);
+  return `<div class="card daybars"><div class="db-h"><span class="label">Dépenses par jour</span><span class="small muted">Plus gros jour : <b class="num" style="color:var(--fg)">${eur0(by[top] || 0)}</b> le ${sDate(top)}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Dépenses par jour">${ds.map((d, i) => { const v = by[d] || 0, h = Math.max(v / max * (H - T - B), v ? 3 : 1.5), x = i * slot + (slot - bw) / 2;
+      return `<g data-day="${d}" class="dbar ${sel === d ? "on" : ""}"><rect x="${i * slot}" y="0" width="${slot}" height="${H}" fill="transparent"/><rect class="grow-y" style="animation-delay:${i * 12}ms" x="${x.toFixed(1)}" y="${(H - B - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" rx="${Math.min(bw / 2, 3)}" fill="${sel === d || (!sel && d === top) ? "var(--accent)" : v ? "var(--accent)" : "var(--line)"}" opacity="${sel ? (sel === d ? 1 : .3) : d === top ? 1 : v ? .45 : 1}"/></g>`; }).join("")}
+      ${[ds[0], ds[Math.floor(ds.length / 2)], ds[ds.length - 1]].map((d, i) => `<text x="${i === 0 ? 0 : i === 1 ? W / 2 : W}" y="${H - 4}" text-anchor="${["start","middle","end"][i]}" font-size="10">${sDate(d)}</text>`).join("")}
+    </svg></div>`;
+}
 function viewOps() {
   if (!S.statements.length) return emptyState();
   const f = S.f; const s = curStmt();
-  let txs = S.period === "all" ? allTx() : periodTx(s.id);
-  const accts = [...new Set(allTx().map(t => t.acct))];
+  const base = S.period === "all" ? allTx() : periodTx(s.id);
+  let txs = base;
+  const accts = [...new Set(base.map(t => t.acct))];
   if (f.kind === "out") txs = txs.filter(t => t.amount < 0); if (f.kind === "in") txs = txs.filter(t => t.amount > 0);
   if (f.cat) txs = txs.filter(t => t.cat === f.cat);
   if (f.acct) txs = txs.filter(t => t.acct === f.acct);
@@ -926,13 +1069,15 @@ function viewOps() {
   const total = r2(txs.reduce((a, t) => a + t.amount, 0));
   const groups = {}; for (const t of txs) (groups[t.date] = groups[t.date] || []).push(t);
   const html = Object.entries(groups).map(([d, list]) => `<div class="day"><span>${esc(dDate(d))}</span><span class="num">${eurS(r2(list.reduce((a, t) => a + t.amount, 0)))}</span></div><div class="card" style="padding:4px 14px"><div class="list">${list.map(txRow).join("")}</div></div>`).join("");
+  const by = stats(base.filter(t => !f.acct || t.acct === f.acct)).by;
+  const cats = Object.entries(by).filter(([k, v]) => v > 0 && CATS[k]).sort((a, b) => b[1] - a[1]);
+  if (f.cat && !cats.some(([k]) => k === f.cat)) cats.unshift([f.cat, 0]);
+  const short = (a) => a.replace(/^Compte Courant Postal$/, "Compte courant");
   return `
-  <input class="search" id="q" type="search" placeholder="Rechercher un marchand, un montant, une note…" value="${esc(f.q)}" autocomplete="off">
-  <div class="chips" role="group" aria-label="Type">${f.date ? `<button class="chip" data-act="day-clear" aria-pressed="true">${esc(lDate(f.date))} ✕</button>` : ""}${[["all","Tout"],["out","Dépenses"],["in","Revenus"]].map(([k, l]) => `<button class="chip" data-kind="${k}" aria-pressed="${!f.date && f.kind === k}">${l}</button>`).join("")}</div>
-  <div class="selects">
-    <select id="fcat" aria-label="Catégorie"><option value="">Toutes catégories</option>${catOptions(f.cat, ["out","in","none"])}</select>
-    <select id="facct" aria-label="Compte"><option value="">Tous les comptes</option>${accts.map(a => `<option ${f.acct === a ? "selected" : ""}>${esc(a)}</option>`).join("")}</select>
-  </div>
+  <input class="search" id="q" type="search" placeholder="Rechercher un marchand, un montant…" value="${esc(f.q)}" autocomplete="off">
+  <div class="chips" role="group" aria-label="Filtres">${f.date ? `<button class="chip" data-act="day-clear" aria-pressed="true">${esc(lDate(f.date))} ✕</button>` : ""}${[["all","Tout"],["out","Dépenses"],["in","Revenus"]].map(([k, l]) => `<button class="chip" data-kind="${k}" aria-pressed="${!f.date && f.kind === k}">${l}</button>`).join("")}${accts.length > 1 ? `<span class="chip-sep"></span>${accts.map(a => `<button class="chip" data-facct="${esc(a)}" aria-pressed="${f.acct === a}">${esc(short(a))}</button>`).join("")}` : ""}</div>
+  ${cats.length && f.kind !== "in" ? `<div class="chips cats" role="group" aria-label="Catégories">${cats.map(([k, v]) => `<button class="cchip" data-fcat="${k}" aria-pressed="${f.cat === k}" style="--c:${CATS[k].c}">${icon(k, CATS[k].l)}<span>${esc(CATS[k].l)}</span><b class="num">${eur0(v)}</b></button>`).join("")}</div>` : ""}
+  ${S.period !== "all" && !f.q && !f.cat ? dayBars(base.filter(t => !f.acct || t.acct === f.acct), s, f.date) : ""}
   <div class="summary-bar"><span>${txs.length} opération${txs.length > 1 ? "s" : ""}</span><span class="num">Total ${eurS(total)}</span></div>
   ${html || `<div class="card empty"><p class="muted">Aucune opération ne correspond.</p></div>`}`;
 }
@@ -942,29 +1087,33 @@ function viewForecast() {
   const today = iso(new Date());
   const stale = today > fc.end;
   const evs = fc.events;
-  const rec = recurring();
-  return `${dailyCard()}
-  <section class="card"><h2>Solde prévu<span class="sub">au ${lDate(fc.end)}</span></h2>
-    <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-4px 0 6px"><b class="num ${fc.end_v < 0 ? "bad" : ""}" style="font-family:var(--f-display);font-size:34px;letter-spacing:-.03em">${eur(fc.end_v)}</b><span class="small muted">aujourd'hui sur le relevé : ${eur(fc.a.closing)}</span></div>
-    ${lineChart(actual, fc.pts)}
-    <div class="legend-inline"><span><i style="width:16px;height:3px;background:var(--accent);display:inline-block;border-radius:2px"></i>Réel</span><span><i style="width:16px;border-top:3px dashed var(--accent);display:inline-block"></i>Prévision</span></div>
-    ${fc.min.v < 0 ? `<div class="notice" style="margin-top:12px">Découvert possible : le solde pourrait descendre à <b>${eur(fc.min.v)}</b> vers le ${lDate(fc.min.date)}.</div>` : fc.min.v < 50 ? `<div class="notice" style="margin-top:12px">Le solde pourrait descendre à <b>${eur(fc.min.v)}</b> vers le ${lDate(fc.min.date)}. Gardez une marge.</div>` : ""}
-    ${stale ? `<p class="small muted" style="margin:10px 0 0">Cette prévision part de votre dernier relevé (${lDate(fc.start)}). Importez le relevé suivant pour la mettre à jour.</p>` : ""}
+  const hidden = recurring().filter(r => r.freq === "off" && S.settings.recur[r.key]);
+  const mood = fc.min.v < 0 ? "bad" : fc.min.v < 100 ? "warn" : "ok";
+  const moodTxt = { bad:`Découvert possible vers le ${lDate(fc.min.date)} (${eur0(fc.min.v)})`, warn:`Ce sera juste vers le ${lDate(fc.min.date)} : ${eur0(fc.min.v)}`, ok:"Pas de découvert en vue" }[mood];
+  const moodIco = { bad:'<path d="M12 8v5M12 16.5v.01"/><circle cx="12" cy="12" r="9"/>', warn:'<path d="M12 8v5M12 16.5v.01"/><path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>', ok:'<path d="M20 6L9 17l-5-5"/>' }[mood];
+  return `
+  <section class="hero fc-hero ${mood}">
+    <div class="label">Le ${lDate(fc.end)}, il devrait vous rester</div>
+    <div class="big num" data-count="${fc.end_v}">${eur(fc.end_v)}</div>
+    <div class="mood">${SVG(moodIco)}<span>${esc(moodTxt)}</span></div>
   </section>
-  <section class="card"><h2>Le calcul</h2><table class="tbl"><tbody>
-    <tr><td>Solde au ${sDate(fc.start)}</td><td class="r num">${eur(fc.a.closing)}</td></tr>
-    <tr><td>Revenus attendus</td><td class="r num pos">+${eur(fc.incomeIn)}</td></tr>
-    <tr><td>Charges fixes à venir</td><td class="r num">−${eur(fc.fixedOut)}</td></tr>
-    <tr><td>Dépenses du quotidien<div class="small muted">${eur(fc.daily)} par jour, comme le mois dernier</div></td><td class="r num">−${eur(fc.variable)}</td></tr>
-    <tr><td><b>Solde prévu au ${sDate(fc.end)}</b></td><td class="r num"><b>${eur(fc.end_v)}</b></td></tr>
-  </tbody></table></section>
+  <section class="card"><h2>Jour par jour<span class="sub">glissez le doigt sur la courbe</span></h2>
+    ${curve(actual, fc.pts, evs)}
+    ${stale ? `<p class="small muted" style="margin:10px 0 0">Prévision faite à partir du relevé du ${lDate(fc.start)}. Importez le suivant pour la mettre à jour.</p>` : ""}
+  </section>
+  <section class="card"><h2>Comment on arrive là</h2>
+    ${waterfall(fc)}
+    <p class="small muted" style="margin:6px 0 0">Le quotidien, c'est ${eur0(fc.daily)} par jour, comme le mois dernier.</p>
+  </section>
+  ${dailyCard()}
   <section class="card"><h2>À venir<span class="sub">${evs.length} opération${evs.length > 1 ? "s" : ""}</span></h2>
-    ${evs.length ? evs.map(e => `<div class="ev"><div class="d"><b>${e.date.slice(8, 10)}</b><span>${MSHORT[+e.date.slice(5, 7) - 1]}</span></div><div><div class="t">${esc(title(e.name))}</div><div class="small muted">${esc((CATS[e.cat] || CATS.autres).l)}</div></div><b class="num ${e.amount > 0 ? "pos" : ""}">${eurS(e.amount)}</b></div>`).join("") : `<p class="muted">Aucune opération régulière détectée pour l'instant.</p>`}
-  </section>
-  <section class="card"><h2>Charges régulières<span class="sub">${eur(r2(rec.reduce((s, r) => s + monthly(r), 0)))} / mois</span></h2>
-    <p class="small muted" style="margin:-6px 0 6px">Indiquez la fréquence de chaque charge pour affiner la prévision.</p>
-    ${rec.map(r => `<div class="bud"><div class="h"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(title(r.name))}</b><span class="num">${eur(r.last)}</span></div>
-      <div class="seg" role="group" aria-label="Fréquence">${[["m","Mensuel"],["y","Annuel"],["off","Ponctuel"]].map(([k, l]) => `<button data-freq="${k}" data-k="${esc(r.key)}" aria-pressed="${r.freq === k}">${l}</button>`).join("")}</div></div>`).join("") || `<p class="muted">Aucune charge régulière détectée.</p>`}
+    ${evs.length ? `<div class="tl">${evs.map((e, i) => { const past = e.date < today; return `<${e.rec ? `button data-rec="${esc(e.rec)}"` : "div"} class="tl-i ${past ? "past" : ""}" style="animation-delay:${i * 35}ms">
+      <span class="tl-d"><b>${e.date.slice(8, 10)}</b>${MSHORT[+e.date.slice(5, 7) - 1]}</span>
+      <i class="tl-dot" style="background:${e.amount > 0 ? "var(--in)" : (CATS[e.cat] || CATS.autres).c}"></i>
+      <span class="tl-t"><b>${esc(title(e.name))}</b><small>${past && e.after != null ? `Passé · solde ${eur0(e.after)}` : past ? "Passé" : e.after != null ? `Il restera ${eur0(e.after)}` : esc((CATS[e.cat] || CATS.autres).l)}</small></span>
+      <b class="num ${e.amount > 0 ? "pos" : ""}">${eurS(e.amount)}</b></${e.rec ? "button" : "div"}>`; }).join("")}</div>
+      <p class="small muted" style="margin:10px 0 0">Tout est repéré automatiquement. Touchez une charge si elle ne doit plus revenir.</p>` : `<p class="muted">Rien de régulier repéré pour l'instant. Avec un deuxième relevé, l'appli verra mieux ce qui revient.</p>`}
+    ${hidden.length ? `<div class="chips" style="margin-top:12px;flex-wrap:wrap">${hidden.map(r => `<button class="chip" data-rec="${esc(r.key)}">${SVG('<path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5"/>')} ${esc(title(r.name))}</button>`).join("")}</div>` : ""}
   </section>`;
 }
 function goalRow(g) {
@@ -1311,17 +1460,20 @@ function dailyBudget() {
 function dailyCard() {
   const d = dailyBudget(); if (!d.inc) return "";
   const over = d.actual != null && d.actual > d.perDay;
+  const max = Math.max(d.perDay, d.actual || 0, 1);
+  const parts = [["Charges fixes", d.fixed, "var(--danger)"], ["Objectifs", d.goals, "var(--accent-2)"], ["Quotidien", Math.max(d.avail, 0), "var(--warn)"]].filter(p => p[1] > 0);
+  const tot = parts.reduce((s, p) => s + p[1], 0) || 1;
   return `<section class="card"><h2>Budget du jour</h2>
-    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="bigv num ${d.perDay < 0 ? "bad" : ""}">${eur(d.perDay)}</span><span class="muted">par jour pour le quotidien</span></div>
-    ${d.actual != null ? `<p style="margin:8px 0 10px">Le mois dernier, vous avez dépensé <b class="${over ? "bad" : "pos"}">${eur(d.actual)} par jour</b>${over ? `, soit ${d.perDay > 0 ? (d.actual / d.perDay).toLocaleString("fr-FR", { maximumFractionDigits:1 }) + " fois" : "plus que"} ce budget.` : ", c'est dans le budget."}</p>` : ""}
-    <table class="tbl"><tbody>
-      <tr><td>Revenus réguliers</td><td class="r num pos">${eur(d.inc)}</td></tr>
-      <tr><td>Charges fixes</td><td class="r num">−${eur(d.fixed)}</td></tr>
-      ${d.goals ? `<tr><td>Pour vos objectifs</td><td class="r num">−${eur(d.goals)}</td></tr>` : ""}
-      <tr><td><b>Pour le quotidien, par mois</b></td><td class="r num"><b>${eur(d.avail)}</b></td></tr>
-    </tbody></table></section>`;
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span class="bigv num ${d.perDay < 0 ? "bad" : ""}" data-count="${d.perDay}">${eur(d.perDay)}</span><span class="muted">par jour pour le quotidien</span></div>
+    ${d.actual != null ? `<div class="vs">
+      <div><span>Budget</span><div class="bar"><i style="width:${Math.max(d.perDay, 0) / max * 100}%;background:var(--accent)"></i></div><b class="num">${eur0(d.perDay)}</b></div>
+      <div><span>Mois dernier</span><div class="bar"><i style="width:${d.actual / max * 100}%;background:${over ? "var(--danger)" : "var(--in)"};animation-delay:.15s"></i></div><b class="num ${over ? "bad" : "pos"}">${eur0(d.actual)}</b></div>
+    </div>` : ""}
+    <div class="label" style="margin:14px 0 6px">Vos ${eur0(d.inc)} de revenus par mois</div>
+    <div class="stack">${parts.map((p, i) => `<i style="flex:${p[1] / tot};background:${p[2]};animation-delay:${i * .1}s"></i>`).join("")}</div>
+    <div class="legend-inline">${parts.map(p => `<span><i class="dot" style="background:${p[2]}"></i>${p[0]} ${eur0(p[1])}</span>`).join("")}</div>
+  </section>`;
 }
-
 /* ---------- import alerts ---------- */
 function alertsFor(s) {
   if (!s) return [];
@@ -1690,10 +1842,10 @@ function sheetTx(id) {
   return sheet(`
     <div><div class="label">${esc(dDate(t.date))}</div><div class="amt num ${t.amount > 0 ? "pos" : ""}">${eurS(t.amount)}</div><div style="font-weight:700;font-size:17px">${esc(title(t.merchant))}</div></div>
     <dl class="kv"><dt>Libellé</dt><dd>${esc(t.title)}</dd>${t.detail ? `<dt>Détail</dt><dd class="small">${esc(t.detail)}</dd>` : ""}<dt>Compte</dt><dd>${esc(t.acct)}</dd></dl>
-    <div><div class="label" style="margin-bottom:8px">Catégorie</div>
+    <details class="catpick"><summary>${icon(t.cat, t.merchant)}<span><span class="label">Catégorie</span><b>${esc(CATS[t.cat].l)}</b></span><span class="linkish">Changer</span></summary>
       ${groups.map(([g, ks]) => `<div class="small muted" style="margin:8px 0 6px">${g}</div><div class="catgrid">${ks.map(k => `<button data-setcat="${k}" data-tx="${esc(t.id)}" aria-pressed="${t.cat === k}"><i class="dot" style="background:${CATS[k].c}"></i>${esc(CATS[k].l)}</button>`).join("")}</div>`).join("")}
       <label class="check" style="margin-top:12px"><input type="checkbox" id="apply-all" checked> Appliquer à toutes les opérations « ${esc(title(t.merchant))} »</label>
-    </div>
+    </details>
     ${t.amount < 0 ? `<button class="btn ghost block" data-act="debt-new" data-tx="${esc(t.id)}">${SVG('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M19 8v6M16 11h6"/>')}Quelqu'un me doit une partie</button>` : ""}
     <div class="field"><label for="note">Note</label><textarea id="note" placeholder="Ajouter une note (ex. remboursé par Léa)">${esc(S.settings.notes[t.id] || "")}</textarea>
       <button class="btn ghost block" data-act="note-save" data-tx="${esc(t.id)}">Enregistrer la note</button></div>
@@ -1732,11 +1884,19 @@ function sheetCat(k) {
     ${k && c.base && S.settings.catEdits[k] ? `<button class="btn ghost block" data-act="cat-reset" data-k="${k}">Revenir au nom et à la couleur d'origine</button>` : ""}
     ${k && !c.base ? (S.confirm === "cat-del" ? `<button class="btn danger block" data-act="cat-del-ok" data-k="${k}">Confirmer : ses opérations repassent en classement automatique</button>` : `<button class="btn ghost block" data-act="cat-del" data-k="${k}">Supprimer la catégorie</button>`) : ""}`, "Catégorie");
 }
+function sheetRec(key) {
+  const r = recurring().find(x => x.key === key); if (!r) return "";
+  return sheet(`
+    <div><div class="label">${esc(CATS[r.cat].l)}</div><div class="amt num">${eur(r.last)}</div><div style="font-weight:700;font-size:17px">${esc(title(r.name))}</div></div>
+    <p class="small muted" style="margin:0">Dernier passage le ${lDate(r.date)}. Repéré automatiquement : ${FREQ[r.auto].toLowerCase()}.</p>
+    <div class="field"><label>Dans les prévisions</label><div class="seg" role="group">${Object.entries(FREQ).map(([k, l]) => `<button data-freq="${k}" data-k="${esc(r.key)}" aria-pressed="${r.freq === k}">${l}</button>`).join("")}</div></div>
+    <button class="btn block" data-act="close">Fermer</button>`, "Charge régulière");
+}
 function openSheet(html) { $("#layer").innerHTML = html; S.sheetOpen = html ? S.sheetOpen : null; }
 function closeSheet() { $("#layer").innerHTML = ""; S.sheetOpen = null; S.confirm = null; }
 function refreshSheet() {
   if (!S.sheetOpen) return; const [kind, id, extra] = S.sheetOpen;
-  openSheet(kind === "tx" ? sheetTx(id) : kind === "goal" ? sheetGoal(id) : kind === "person" ? sheetPerson(id) : kind === "debt" ? sheetDebt(id, extra) : kind === "challenge" ? sheetChallenge(id) : kind === "loan" ? sheetLoan(id) : sheetCat(id));
+  openSheet(kind === "tx" ? sheetTx(id) : kind === "goal" ? sheetGoal(id) : kind === "person" ? sheetPerson(id) : kind === "debt" ? sheetDebt(id, extra) : kind === "challenge" ? sheetChallenge(id) : kind === "loan" ? sheetLoan(id) : kind === "rec" ? sheetRec(id) : sheetCat(id));
 }
 function showSheet(kind, id, extra) { S.confirm = null; S.sheetOpen = [kind, id, extra]; refreshSheet(); }
 
@@ -1828,9 +1988,10 @@ function render() {
   const caret = focusQ ? document.activeElement.selectionStart : 0;
   const fn = { home:viewHome, ops:viewOps, forecast:viewForecast, savings:viewSavings, more:viewMore, budgets:viewBudgets, month:viewMonth, year:viewYear, import:viewImport, cats:viewCats, security:viewSecurity, data:viewData, simu:viewSimu, health:viewHealth, people:viewPeople, loans:viewLoans }[S.view] || viewHome;
   v.innerHTML = fn();
-  if (lastView !== S.view) { v.classList.remove("enter"); void v.offsetWidth; v.classList.add("enter"); lastView = S.view; }
+  const entered = lastView !== S.view;
+  if (entered) { v.classList.remove("enter"); void v.offsetWidth; v.classList.add("enter"); lastView = S.view; }
   if (focusQ) { const q = $("#q"); if (q) { q.focus(); try { q.setSelectionRange(caret, caret); } catch (e) {} } }
-  const c = v.querySelector("[data-count]"); if (c) countUp(c, parseFloat(c.dataset.count));
+  if (entered && !matchMedia("(prefers-reduced-motion: reduce)").matches) v.querySelectorAll("[data-count]").forEach(c => countUp(c, parseFloat(c.dataset.count)));
 }
 function countUp(el, to) {
   const t0 = performance.now(), dur = 700;
@@ -1925,7 +2086,7 @@ function readGoalForm(id) {
 }
 
 document.addEventListener("click", async (e) => {
-  const el = e.target.closest("[data-nav],[data-go],[data-act],[data-tx],[data-cat],[data-kind],[data-setcat],[data-goal],[data-editcat],[data-swatch],[data-ckind],[data-freq],[data-year],[data-pin],[data-rate],[data-cut],[data-person],[data-day],[data-mult],[data-dir],[data-chtype],[data-loan],[data-ltype]");
+  const el = e.target.closest("[data-nav],[data-go],[data-act],[data-tx],[data-cat],[data-kind],[data-setcat],[data-goal],[data-editcat],[data-swatch],[data-ckind],[data-freq],[data-year],[data-pin],[data-rate],[data-cut],[data-person],[data-day],[data-mult],[data-dir],[data-chtype],[data-loan],[data-ltype],[data-rec],[data-fcat],[data-facct]");
   if (!el) return;
   if (el.matches(".scrim") && e.target.closest("[data-stop]")) return;
   if (el.dataset.pin) { padDigit(el.dataset.pin); return; }
@@ -1941,11 +2102,15 @@ document.addEventListener("click", async (e) => {
   }
   if (el.dataset.swatch) { const box = el.closest(".field"); box.querySelectorAll("[data-swatch]").forEach(b => b.setAttribute("aria-pressed", String(b === el))); $("#g-color").value = el.dataset.swatch; return; }
   if (el.dataset.ckind) { el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el))); $("#c-kind").value = el.dataset.ckind; return; }
-  if (el.dataset.freq) { if (el.dataset.freq === "m") delete S.settings.recur[el.dataset.k]; else S.settings.recur[el.dataset.k] = el.dataset.freq; saveSettings(); render(); return; }
+  if (el.dataset.freq) { const r = recurring().find(x => x.key === el.dataset.k); if (r && r.auto === el.dataset.freq) delete S.settings.recur[el.dataset.k]; else S.settings.recur[el.dataset.k] = el.dataset.freq; saveSettings(); render(); refreshSheet(); return; }
+  if (el.dataset.rec) { showSheet("rec", el.dataset.rec); return; }
+  if (el.dataset.fcat) { S.f.cat = S.f.cat === el.dataset.fcat ? "" : el.dataset.fcat; delete S.f.date; render(); return; }
+  if (el.dataset.facct) { S.f.acct = S.f.acct === el.dataset.facct ? "" : el.dataset.facct; render(); return; }
   if (el.dataset.year) { S.year = el.dataset.year; render(); return; }
   if (el.dataset.rate) { $("#sim-rate").value = el.dataset.rate; updateSim(); return; }
   if (el.dataset.cut) { simCfg(); S.settings.habit.cut = +el.dataset.cut; updateSim(); return; }
   if (el.dataset.person) { showSheet("person", el.dataset.person); return; }
+  if (el.dataset.day && S.view === "ops" && S.f.date === el.dataset.day) { delete S.f.date; render(); return; }
   if (el.dataset.day) { S.f = { q:"", kind:"all", cat:"", acct:"", date:el.dataset.day }; go("ops"); return; }
   if (el.dataset.mult) { S.settings.roundMult = +el.dataset.mult; saveSettings(); render(); return; }
   if (el.dataset.dir) { el.parentElement.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === el))); $("#d-dir").value = el.dataset.dir; return; }
@@ -2068,6 +2233,9 @@ document.addEventListener("change", (e) => {
   if (id === "file-ap" && e.target.files.length) { const f = e.target.files[0]; e.target.value = ""; importApplePay(f); }
 });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); if (S.pad && /^[0-9]$/.test(e.key)) padDigit(e.key); if (S.pad && e.key === "Backspace") padDigit("del"); });
+document.addEventListener("pointerdown", (e) => { const b = e.target.closest(".curve"); if (b) scrubAt(b, e.clientX); });
+document.addEventListener("pointermove", (e) => { const b = e.target.closest(".curve"); if (b && (e.pointerType === "mouse" || e.buttons || e.pressure)) scrubAt(b, e.clientX); });
+["pointerup", "pointercancel", "pointerleave"].forEach(n => document.addEventListener(n, (e) => { const b = e.target.closest && e.target.closest(".curve"); if (b) scrubEnd(b); }, true));
 let hiddenAt = 0;
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) { hiddenAt = Date.now(); if (S.lock.enabled) document.body.classList.add("hiding"); }

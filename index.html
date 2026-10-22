@@ -663,11 +663,23 @@ function rebuildCats() {
   OUT_CATS = Object.keys(CATS).filter(k => CATS[k].k === "out");
   IN_CATS = Object.keys(CATS).filter(k => CATS[k].k === "in");
 }
+// A transfer in one's own name that has no mirror entry (opposite amount, within 3 days) on another account
+// of the same statement left La Banque Postale: it went to (or came from) the Boursorama account.
+function selfOutside() {
+  if (memo.selfOut) return memo.selfOut;
+  const out = new Set();
+  for (const s of S.statements) for (const t of s.txs) {
+    if (!t.self) continue;
+    const twin = s.txs.some(u => u.acct !== t.acct && Math.abs(u.amount + t.amount) < 0.005 && Math.abs(days(u.date, t.date)) <= 3);
+    if (!twin) out.add(t.id);
+  }
+  return (memo.selfOut = out);
+}
 // A transfer to one's own BoursoBank account (bank code 40618 in the IBAN) is an investment, not a move between La Banque Postale accounts.
 const BOURSO_IBAN = /FR\d{2}40618/;
 function guess(t) {
   if (t.type === "virement" && (BOURSO_IBAN.test((t.title + t.detail).replace(/\s/g, "")) || RULES[0][2].test(t.title + " " + t.detail))) return "placements";
-  if (t.self) return "interne";
+  if (t.self) return selfOutside().has(t.id) ? "placements" : "interne";
   const credit = t.amount > 0;
   const text = t.type === "cb" ? t.merchant : (t.title + " " + t.detail);
   for (const [cat, side, rx] of RULES) {
